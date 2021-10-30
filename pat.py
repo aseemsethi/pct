@@ -2,8 +2,8 @@
 # pip install pdfminer, xlrd
 # We need to run ocrmypdf from docker as explained in https://ocrmypdf.readthedocs.io/en/latest/docker.html
 # Run the following 2 commands in your terminal where you will run this exe file
-#		docker pull  jbarlow83/ocrmypdf
-#		docker tag jbarlow83/ocrmypdf ocrmypdf
+#		$ sudo docker pull  jbarlow83/ocrmypdf
+#		$ sudo docker tag jbarlow83/ocrmypdf ocrmypdf
 # This is then used as following in the code 
 #		"sudo docker run --rm -i ocrmypdf - - <tmp1.pdf >tmp11.pdf"
 

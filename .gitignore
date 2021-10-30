@@ -1,0 +1,8 @@
+build/
+dist/
+pat.py  
+__pycache__  
+pat.spec
+tmp*
+resultList*
+
