@@ -52,11 +52,23 @@ def pdf_from_file_to_txt(fileName):
 			email += item.strip().replace(" ", "")
 			email += ", "
 			print (email)
+	
+	# Get "Applicant Only" - Address
+	address = ""
+	start = text.find("States") 
+	#print (start)
+	i=1
+	for line in text[start+10:].split("\n"):
+		#print(line)
+		address += line + ", "
+		i=i+1
+		if i > 10:
+			break;
 
 	# Freeing Up
 	device.close()
 	sio.close()
-	return email
+	return email, address
 
 def workon(sh, rowx):
 	print("############ Processing row.. {0}".format(rowx))
@@ -88,9 +100,9 @@ def workon(sh, rowx):
 	file.close()
 	print("Running docker cmd to OCR read the pdf file..")
 	os.system('sudo docker run --rm -i ocrmypdf - - <tmp1.pdf >tmp11.pdf')
-	email = pdf_from_file_to_txt("tmp11.pdf")
-	print ("Email: " + email)
-	return email
+	email, address = pdf_from_file_to_txt("tmp11.pdf")
+	print ("Email: " + email + ", Address: " + address)
+	return email, address
 
 
 file=u'resultList1.xls'
@@ -110,6 +122,8 @@ for rx in range(sh.nrows):
 	if rx < 3:
 		continue
 	#workon(sh.row(rx))
-	email = workon(sh, rx)
+	email, address = workon(sh, rx)
 	w_sheet.write(rx, sh.ncols, email)
+	w_sheet.write(rx, sh.ncols+1, address)
 	wb.save('resultList1.xls')
+	
