@@ -1,16 +1,11 @@
 # Install and Activate venv
 # pip install pdfminer, xlrd
 # We need to run ocrmypdf from docker as explained in https://ocrmypdf.readthedocs.io/en/latest/docker.html
-# Run the following 2 commands in your terminal where you will run this exe file
+# Run the following 2 commands in your terminal where you will run this python exe file
 #		$ sudo docker pull  jbarlow83/ocrmypdf
 #		$ sudo docker tag jbarlow83/ocrmypdf ocrmypdf
 # This is then used as following in the code 
 #		"sudo docker run --rm -i ocrmypdf - - <tmp1.pdf >tmp11.pdf"
-
-# Install 
-# tar -zxvf leptonica-1.82.0.tar.gz 
-# cd leptonica-1.82.0/,    ./configure, make, sudo make install sudo ldconfig
-# export LD_LIBRARY_PATH=/home/ec2-user/environment/pat-venv/lept/leptonica-1.82.0/src/.libs
 
 import xlrd
 import urllib.request
@@ -62,7 +57,7 @@ def pdf_from_file_to_txt(fileName):
 		#print(line)
 		address += line + ", "
 		i=i+1
-		if i > 10:
+		if i > 12:
 			break;
 
 	# Freeing Up
@@ -77,6 +72,9 @@ def workon(sh, rowx):
 	# Url is of type http://patentscope.wipo.int/search/en/WO2021208467
 	url = '(No URL)' if link is None else link.url_or_path
 	print("URL: {0}".format(url))
+	if url == '(No URL)':
+		print ("..exiting")
+		return "Start URL null", "Start URL null"
 	# print(url.split('/')[-1])  # get the document id
 	# Convert url to 
 	# #https://patentscope.wipo.int/search/en/detail.jsf?docId=WO2021208467&tab=PCTDOCUMENTS
@@ -87,14 +85,21 @@ def workon(sh, rowx):
 	print("Getting PCTDOCUMENTS: " + urlDoc)
 	contents = urllib.request.urlopen(urlDoc).read()
 	contents1 = contents.decode("utf-8") 
+	#print(contents1)
 	start = contents1.find("(RO/101)") 
+	#if start == -1:
+	#	return "RO101  not found", "RO101 not found"
 	end = contents1.find("\">PDF ", start)
 	#matches=re.findall(r'\"(.+?)\"',text)
-	# print(start, end)
+	#print(start, end)
 	substring = contents1[start+73:end]
 	urlRO101 = "https://patentscope.wipo.int/" + substring
 	print("Getting RO/101 PDF: " + urlRO101)
-	contentsRO101 = urllib.request.urlopen(urlRO101).read()
+	try:
+		contentsRO101 = urllib.request.urlopen(urlRO101).read()
+	except:
+		print("Invalid RO101 URL")
+		return "RO101  error", "RO101 error"
 	file = open("tmp1.pdf", 'wb')
 	file.write(contentsRO101)
 	file.close()
@@ -118,6 +123,7 @@ sh = book.sheet_by_index(0)
 print("Sheet: {0} Rows:{1} Cols:{2}".format(sh.name, sh.nrows, sh.ncols))
 wb = copy(book) # a writable copy (I can't read values out of this, only write to it)
 w_sheet = wb.get_sheet(0) # the sheet to write to within the writable copy
+
 for rx in range(sh.nrows):
 	if rx < 3:
 		continue
@@ -126,4 +132,3 @@ for rx in range(sh.nrows):
 	w_sheet.write(rx, sh.ncols, email)
 	w_sheet.write(rx, sh.ncols+1, address)
 	wb.save('resultList1.xls')
-	
