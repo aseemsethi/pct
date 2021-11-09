@@ -1,3 +1,4 @@
+
 # Install and Activate venv
 # pip install pdfminer, xlrd
 # We need to run ocrmypdf from docker as explained in https://ocrmypdf.readthedocs.io/en/latest/docker.html
@@ -8,6 +9,9 @@
 #		"sudo docker run --rm -i ocrmypdf - - <tmp1.pdf >tmp11.pdf"
 
 import xlrd
+from pathlib import Path
+from datetime import datetime
+import shutil
 import urllib.request
 import re
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
@@ -65,7 +69,9 @@ def pdf_from_file_to_txt(fileName):
 	sio.close()
 	return email, address
 
-def workon(sh, rowx):
+def workon(sh, rowx, timeNow):
+	PDFDir = "PDF" + timeNow.strftime("%d-%m-%Y-%H:%M:%S")
+	Path(PDFDir).mkdir(parents=True, exist_ok=True)
 	print("############ Processing row.. {0}".format(rowx))
 	print("URL: {0}".format(sh.cell_value(rowx, colx=0)))
 	link = sh.hyperlink_map.get((rowx, 0))
@@ -75,7 +81,7 @@ def workon(sh, rowx):
 	if url == '(No URL)':
 		print ("..exiting")
 		return "Start URL null", "Start URL null"
-	# print(url.split('/')[-1])  # get the document id
+	pdfName = url.split('/')[-1]  # get the document id
 	# Convert url to 
 	# #https://patentscope.wipo.int/search/en/detail.jsf?docId=WO2021208467&tab=PCTDOCUMENTS
 	urlDoc = \
@@ -103,6 +109,8 @@ def workon(sh, rowx):
 	file = open("tmp1.pdf", 'wb')
 	file.write(contentsRO101)
 	file.close()
+	newFile = PDFDir +'/' + pdfName + '.pdf'
+	shutil.copy2('tmp1.pdf', newFile)
 	print("Running docker cmd to OCR read the pdf file..")
 	os.system('sudo docker run --rm -i ocrmypdf - - <tmp1.pdf >tmp11.pdf')
 	email, address = pdf_from_file_to_txt("tmp11.pdf")
@@ -111,6 +119,7 @@ def workon(sh, rowx):
 
 
 file=u'resultList1.xls'
+now = datetime.now()
 try:
     book = xlrd.open_workbook(file,
     	encoding_override="cp1251", formatting_info=True)  
@@ -128,7 +137,7 @@ for rx in range(sh.nrows):
 	if rx < 3:
 		continue
 	#workon(sh.row(rx))
-	email, address = workon(sh, rx)
+	email, address = workon(sh, rx, now)
 	w_sheet.write(rx, sh.ncols, email)
 	w_sheet.write(rx, sh.ncols+1, address)
 	wb.save('resultList1.xls')
