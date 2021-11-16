@@ -1,13 +1,30 @@
-
-# Install and Activate venv
+# Developer: Aseem Sethi, Nov 2021
+# Install pip
+# $ python3 -m pip install --user --upgrade pip
+# $ python3 -m pip --version
+# $ python3 -m pip install --user virtualenv
+# $ python3 -m venv pat-env
+# $ source pat-env/bin/activate
+# $ cd pat-env; $ mkdir pat
+# $ copy pat.py into this directory
+# This is where the PDFs will be kept in their own unique dir for every run
+# tmp1 and tmp11 pdf files are temporary files created, that can be deleted later
+#
+# Install PDFminer and xlrd modules
 # pip install pdfminer, xlrd
+#
 # We need to run ocrmypdf from docker as explained in https://ocrmypdf.readthedocs.io/en/latest/docker.html
 # Run the following 2 commands in your terminal where you will run this python exe file
 #		$ sudo docker pull  jbarlow83/ocrmypdf
 #		$ sudo docker tag jbarlow83/ocrmypdf ocrmypdf
 # This is then used as following in the code 
 #		"sudo docker run --rm -i ocrmypdf - - <tmp1.pdf >tmp11.pdf"
-
+#
+# Run the code
+# Ensure that there is a file called resultList1.xls file in the "pat" directory.
+# This same xls file will be modified by addition of 3 columns at the end of the run.
+# $ python pat.py
+#
 import xlrd
 from pathlib import Path
 from datetime import datetime
@@ -142,7 +159,7 @@ def workon(sh, rowx, timeNow):
 	start = contents1.find("a href=\"", start)
 	end = contents1.find("\" class=", start)
 	#matches=re.findall(r'\"(.+?)\"',text)
-	print(start, end)
+	#print(start, end)
 	#substring = contents1[start+73:end]
 	substring = contents1[start+8:end]
 	urlRO101 = "https://patentscope.wipo.int/" + substring
