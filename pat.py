@@ -63,11 +63,23 @@ def pdf_from_file_to_txt(fileName):
 		i=i+1
 		if i > 12:
 			break;
+	
+	# Get Agent Name and Address
+	agent = ""
+	start = text.lower().find("agent") 
+	#print (start)
+	i=1
+	for line in text[start+7:].split("\n"):
+		#print(line)
+		agent += line + ", "
+		i=i+1
+		if i > 20:
+			break;
 
 	# Freeing Up
 	device.close()
 	sio.close()
-	return email, address
+	return email, address, agent
 
 def workon(sh, rowx, timeNow):
 	PDFDir = "PDF" + timeNow.strftime("%d-%m-%Y-%H:%M:%S")
@@ -79,9 +91,10 @@ def workon(sh, rowx, timeNow):
 	url = '(No URL)' if link is None else link.url_or_path
 	print("URL: {0}".format(url))
 	if url == '(No URL)':
-		print ("..exiting")
-		return "Start URL null", "Start URL null"
+		print ("..exiting, no URL found in 1st Column")
+		return "Start URL null", "Start URL null", "Start URL null"
 	pdfName = url.split('/')[-1]  # get the document id
+	# print (pdfName)
 	# Convert url to 
 	# #https://patentscope.wipo.int/search/en/detail.jsf?docId=WO2021208467&tab=PCTDOCUMENTS
 	urlDoc = \
@@ -91,21 +104,54 @@ def workon(sh, rowx, timeNow):
 	print("Getting PCTDOCUMENTS: " + urlDoc)
 	contents = urllib.request.urlopen(urlDoc).read()
 	contents1 = contents.decode("utf-8") 
-	#print(contents1)
 	start = contents1.find("(RO/101)") 
-	#if start == -1:
-	#	return "RO101  not found", "RO101 not found"
-	end = contents1.find("\">PDF ", start)
+	if start == -1:
+		# We did not find the RO101, lets retry
+		print ("...no RO/101 found using tab=PCTDOCUMENTS url")
+		urlDoc = 'https://patentscope.wipo.int/search/en/detail.jsf?docId=' + url.split('/')[-1]
+		#urlDoc += '#detailMainForm:MyTabViewId:PCTDOCUMENTS'
+		print (".....trying: " + urlDoc)
+		data1 = urllib.parse.urlencode(
+		{
+		"javax.faces.partial.ajax": "true",
+		"javax.faces.source": "detailMainForm:MyTabViewId",
+		"javax.faces.partial.execute": "detailMainForm:MyTabViewId",
+		"javax.faces.partial.render": "detailMainForm:MyTabViewId",
+		"javax.faces.behavior.event": "tabChange",
+		"javax.faces.partial.event": "tabChange",
+		"detailMainForm:MyTabViewId_contentLoad": "true",
+		"detailMainForm:MyTabViewId_newTab":"detailMainForm:MyTabViewId:PCTDOCUMENTS",
+		"detailMainForm:MyTabViewId_tabindex": "6",
+		"detailMainForm": "detailMainForm",
+		"detailMainForm:MyTabViewId_activeIndex": "6"
+		})
+		data1 = data1.encode('ascii')
+		req=urllib.request.Request(urlDoc)
+		req.add_header("X-Requested-With", "XMLHttpRequest")
+		contents = urllib.request.urlopen(req, data=data1).read()
+		contents1 = contents.decode("utf-8") 
+		#print (contents1)
+		#file = open("tmp99.txt", 'w')
+		#file.write(contents1)
+		#file.close()
+		start = contents1.find("(RO/101)") 
+		if start == -1:
+			print ("...no RO/101 found again")
+			return "RO101 not found", "RO101 not found", "RO101 not found"
+	#end = contents1.find("\">PDF ", start)
+	start = contents1.find("a href=\"", start)
+	end = contents1.find("\" class=", start)
 	#matches=re.findall(r'\"(.+?)\"',text)
-	#print(start, end)
-	substring = contents1[start+73:end]
+	print(start, end)
+	#substring = contents1[start+73:end]
+	substring = contents1[start+8:end]
 	urlRO101 = "https://patentscope.wipo.int/" + substring
 	print("Getting RO/101 PDF: " + urlRO101)
 	try:
 		contentsRO101 = urllib.request.urlopen(urlRO101).read()
 	except:
 		print("Invalid RO101 URL")
-		return "RO101  error", "RO101 error"
+		return "RO101  error", "RO101 error", "RO101 error"
 	file = open("tmp1.pdf", 'wb')
 	file.write(contentsRO101)
 	file.close()
@@ -113,9 +159,9 @@ def workon(sh, rowx, timeNow):
 	shutil.copy2('tmp1.pdf', newFile)
 	print("Running docker cmd to OCR read the pdf file..")
 	os.system('sudo docker run --rm -i ocrmypdf - - <tmp1.pdf >tmp11.pdf')
-	email, address = pdf_from_file_to_txt("tmp11.pdf")
-	print ("Email: " + email + ", Address: " + address)
-	return email, address
+	email, address, agent = pdf_from_file_to_txt("tmp11.pdf")
+	print ("Email: " + email + ", Address: " + address + ", Agent: " + agent)
+	return email, address, agent
 
 
 file=u'resultList1.xls'
@@ -137,7 +183,8 @@ for rx in range(sh.nrows):
 	if rx < 3:
 		continue
 	#workon(sh.row(rx))
-	email, address = workon(sh, rx, now)
+	email, address, agent = workon(sh, rx, now)
 	w_sheet.write(rx, sh.ncols, email)
 	w_sheet.write(rx, sh.ncols+1, address)
+	w_sheet.write(rx, sh.ncols+2, agent)
 	wb.save('resultList1.xls')
