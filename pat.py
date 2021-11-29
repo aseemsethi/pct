@@ -10,7 +10,7 @@
 # This is where the PDFs will be kept in their own unique dir for every run
 # tmp1 and tmp11 pdf files are temporary files created, that can be deleted later
 #
-# Install PDFminer and xlrd modules
+# Install PDFminer and xlrd, xlutils modules
 # pip install pdfminer, xlrd
 #
 # We need to run ocrmypdf from docker as explained in https://ocrmypdf.readthedocs.io/en/latest/docker.html
@@ -38,7 +38,7 @@ from pdfminer.pdfpage import PDFPage
 from io import StringIO, BytesIO
 import os
 from xlutils.copy import copy
-
+import argparse
 
 def pdf_from_file_to_txt(fileName):
 	# PDFMiner Analyzers
@@ -114,14 +114,18 @@ def workon(sh, rowx, timeNow):
 	# print (pdfName)
 	# Convert url to 
 	# #https://patentscope.wipo.int/search/en/detail.jsf?docId=WO2021208467&tab=PCTDOCUMENTS
-	urlDoc = \
-		'https://patentscope.wipo.int/search/en/detail.jsf?docId=' + \
-		url.split('/')[-1] + \
-		'&tab=PCTDOCUMENTS'
-	print("Getting PCTDOCUMENTS: " + urlDoc)
-	contents = urllib.request.urlopen(urlDoc).read()
-	contents1 = contents.decode("utf-8") 
-	start = contents1.find("(RO/101)") 
+	
+	# Comment out the following, since we know this does not work. USe the 2nd
+	# method only going forward.
+	#urlDoc = \
+	#	'https://patentscope.wipo.int/search/en/detail.jsf?docId=' + \
+	#	url.split('/')[-1] + \
+	#	'&tab=PCTDOCUMENTS'
+	#print("Getting PCTDOCUMENTS: " + urlDoc)
+	#contents = urllib.request.urlopen(urlDoc).read()
+	#contents1 = contents.decode("utf-8") 
+	#start = contents1.find("(RO/101)")
+	start = -1;
 	if start == -1:
 		# We did not find the RO101, lets retry
 		print ("...no RO/101 found using tab=PCTDOCUMENTS url")
@@ -181,7 +185,12 @@ def workon(sh, rowx, timeNow):
 	return email, address, agent
 
 
-file=u'resultList1.xls'
+parser = argparse.ArgumentParser(description="Patent Parser", formatter_class=argparse.RawTextHelpFormatter)
+parser.add_argument("-s", type=argparse.FileType('r'), help="Filename to be passed")
+args = parser.parse_args()
+file = args.s.name
+print(file);
+#file=u'resultList1.xls'
 now = datetime.now()
 try:
     book = xlrd.open_workbook(file,
