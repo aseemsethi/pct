@@ -213,4 +213,5 @@ for rx in range(sh.nrows):
 	w_sheet.write(rx, sh.ncols, email)
 	w_sheet.write(rx, sh.ncols+1, address)
 	w_sheet.write(rx, sh.ncols+2, agent)
-	wb.save('resultList1.xls')
+	#wb.save('resultList1.xls')
+	wb.save(file)
